@@ -1,14 +1,7 @@
 # The services of the project.
 #
-# Each service listed will be deployed to power your project.
-
-mysql:
-    type: mysql:10.4
-    disk: 5120
+# Each service listed will be deployed to power the project.
 
 redis:
     type: redis:6.2
 
-opensearch:
-    type: opensearch:1.2
-    disk: 1024

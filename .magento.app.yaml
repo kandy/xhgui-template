@@ -2,7 +2,7 @@
 # in the same project.
 
 # The name of this app. Must be unique within a project.
-name: mymagento
+name: xhgui
 
 # The toolstack used to build the application.
 type: php:8.1
@@ -16,7 +16,10 @@ dependencies:
 # Enable extensions required by Magento 2
 runtime:
     extensions:
+        - redis
         - xsl
+        - json
+        - blackfire
         - newrelic
         - sodium
 
@@ -25,16 +28,15 @@ runtime:
 # to the application in the environment variable. The right-hand
 # side is in the form `<service name>:<endpoint name>`.
 relationships:
-    database: "mysql:mysql"
     redis: "redis:redis"
-    opensearch: "opensearch:opensearch"
+
 
 # The configuration of app when it is exposed to the web.
 web:
     locations:
         "/":
             # The public directory of the app, relative to its root.
-            root: "pub"
+            root: "webroot"
             # The front-controller script to send non-static requests to.
             passthru: "/index.php"
             index:
@@ -47,54 +49,32 @@ web:
                     allow: true
                 ^/sitemap(.*)\.xml$:
                     passthru: "/media/sitemap$1.xml"
-        "/media":
-            root: "pub/media"
-            allow: true
-            scripts: false
-            expires: 1y
-            passthru: "/get.php"
-        "/static":
-            root: "pub/static"
-            allow: true
-            scripts: false
-            expires: 1y
-            passthru: "/front-static.php"
-            rules:
-                ^/static/version\d+/(?<resource>.*)$:
-                    passthru: "/static/$resource"
+
 
 # The size of the persistent disk of the application (in MB).
 disk: 5120
 
 # The mounts that will be performed when the package is deployed.
 mounts:
-    "var": "shared:files/var"
-    "app/etc": "shared:files/etc"
-    "pub/media": "shared:files/media"
-    "pub/static": "shared:files/static"
+    "cache":
+        source: local
+        source_path: cache
+    "db":
+        source: local
+        source_path: db
+
 
 hooks:
     # We run build hooks before your application has been packaged.
     build: |
         set -e
-        composer install
-        php ./vendor/bin/ece-tools run scenario/build/generate.xml
-        php ./vendor/bin/ece-tools run scenario/build/transfer.xml
+        composer install --no-dev
+
     # We run deploy hook after your application has been deployed and started.
     deploy: |
-        php ./vendor/bin/ece-tools run scenario/deploy.xml
+        echo 'Deploy'
     # We run post deploy hook to clean and warm the cache. Available with ECE-Tools 2002.0.10.
     post_deploy: |
-        php ./vendor/bin/ece-tools run scenario/post-deploy.xml
+        echo 'Posdeploy'
 
-# Default Magento 2 cron jobs
-crons:
-    cronrun:
-        spec: "* * * * *"
-        cmd: "php bin/magento cron:run"
-
-# Environment variables
-variables:
-    env:
-        CONFIG__DEFAULT__PAYPAL_ONBOARDING__MIDDLEMAN_DOMAIN: 'payment-broker.magento.com'
-        CONFIG__STORES__DEFAULT__PAYPAL__NOTATION_CODE: 'Magento_Enterprise_Cloud'
+        
